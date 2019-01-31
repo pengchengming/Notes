@@ -1,3 +1,8 @@
+设计模式
+
+[文档](https://github.com/pengchengming/Notes/blob/master/DesignPattern/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F.md)
+[源码](https://github.com/pengchengming/Notes/tree/master/DesignPattern/src/com/pcm)
+
 Tomcat
 
 [Tomcat7优化](https://github.com/pengchengming/Notes/blob/master/redis/Redis%E9%9B%86%E7%BE%A4.md)
