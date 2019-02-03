@@ -1,7 +1,8 @@
 设计模式
 
-[文档](https://github.com/pengchengming/Notes/blob/master/DesignPattern/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F.md)
-[源码](https://github.com/pengchengming/Notes/tree/master/DesignPattern/src/com/pcm)
+[设计模式文档](https://github.com/pengchengming/Notes/blob/master/DesignPattern/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F.md)
+
+*设计模式*[源码](https://github.com/pengchengming/Notes/tree/master/DesignPattern/src/com/pcm)
 
 Tomcat
 
@@ -14,8 +15,6 @@ MySql
 Redis
 
 [Redis集群](https://github.com/pengchengming/Notes/blob/master/redis/Redis%E9%9B%86%E7%BE%A4.md)
-
-[详解redis操作命令](https://github.com/pengchengming/Notes/blob/master/redis/%E8%AF%A6%E8%A7%A3redis%E6%93%8D%E4%BD%9C%E5%91%BD%E4%BB%A4.md)
 
 Spark
 
