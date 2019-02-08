@@ -1,4 +1,4 @@
-##设计模式
+## 设计模式
 
 [设计模式文档](https://github.com/pengchengming/Notes/blob/master/DesignPattern/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F.md)
 
