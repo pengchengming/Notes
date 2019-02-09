@@ -20,6 +20,10 @@
 
 - [docker基础手册](https://github.com/pengchengming/Notes/blob/master/docker/docker%E5%9F%BA%E7%A1%80%E6%89%8B%E5%86%8C.md)
 
+## Kafka
+
+- [kafka基础教程](https://github.com/pengchengming/Notes/blob/master/kafka/Kafka.md)
+
 ## Spark
 
  [1、scala基础教程](https://blog.csdn.net/nihao_pcm/article/details/86715026)
