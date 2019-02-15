@@ -42,6 +42,7 @@ Incubator毕业。该项目的目标是为处理实时数据提供一个统一�
 
 3）扩展性：
 
+
 因为消息队列解耦了你的处理过程，所以增大消息入队和处理的频率是很容易的，只要另外增加处理过程即可。
 
 4）灵活性 & 峰值处理能力：
@@ -65,9 +66,12 @@ Incubator毕业。该项目的目标是为处理实时数据提供一个统一�
 很多时候，用户不想也不需要立即处理消息。消息队列提供了异步处理机制，允许用户把一个消息放入队列，但并不立即处理它。想向队列中放入多少消息就放多少，然后在需要的时候再去处理它们。
 
 1.4 Kafka架构
+
 -------------
 
+
 ![](media/8e964d6bf3f9b3c37c3682810d1ee436.png)
+
 
 1）Producer ：消息生产者，就是向kafka broker发消息的客户端。
 
@@ -78,6 +82,7 @@ Incubator毕业。该项目的目标是为处理实时数据提供一个统一�
 4） Consumer Group
 （CG）：这是kafka用来实现一个topic消息的广播（发给所有的consumer）和单播（发给任意一个consumer）的手段。一个topic可以有多个CG。topic的消息会复制（不是真的复制，是概念上的）到所有的CG，但每个partion只会把消息发给该CG中的一个consumer。如果需要实现广播，只要每个consumer有一个独立的CG就可以了。要实现单播只要所有的consumer在同一个CG。用CG还可以将consumer进行自由的分组而不需要多次发送消息到不同的topic。
 
+
 5）Broker
 ：一台kafka服务器就是一个broker。一个集群由多个broker组成。一个broker可以容纳多个topic。
 
@@ -85,6 +90,7 @@ Incubator毕业。该项目的目标是为处理实时数据提供一个统一�
 
 7）Offset：kafka的存储文件都是按照offset.kafka来命名，用offset做名字的好处是方便查找。例如你想找位于2049的位置，只要找到2048.kafka的文件即可。当然the
 first offset就是00000000000.kafka
+
 
 二 Kafka集群部署
 ================
@@ -94,11 +100,10 @@ first offset就是00000000000.kafka
 
 ### 2.1.1 集群规划
 
-hadoop102 hadoop103 hadoop104
-
-zk zk zk
-
-kafka kafka kafka
+|node1| node2| node3|
+|---| --- | --- |
+|zk| zk| zk
+|kafka| kafka| kafka|
 
 ### 2.1.2 jar包下载
 
@@ -122,9 +127,10 @@ chkconfig iptables off
 
 ### 2.1.5 安装Zookeeper
 
+
 0）集群规划
 
-在hadoop102、hadoop103和hadoop104三个节点上部署Zookeeper。
+在node1、node2和node3三个节点上部署Zookeeper。
 
 1）解压安装
 
@@ -133,6 +139,7 @@ chkconfig iptables off
 >   tar -zxvf zookeeper-3.4.10.tar.gz -C /opt/module/
 
 >   （2）在/opt/module/zookeeper-3.4.10/这个目录下创建zkData
+
 
 >   mkdir -p zkData
 
@@ -150,11 +157,11 @@ chkconfig iptables off
 
 >   \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#cluster\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
 
->   server.2=hadoop102:2888:3888
+>   server.2=node1:2888:3888
 
->   server.3=hadoop103:2888:3888
+>   server.3=node2:2888:3888
 
->   server.4=hadoop104:2888:3888
+>   server.4=node3:2888:3888
 
 （2）配置参数解读
 
@@ -169,6 +176,7 @@ chkconfig iptables off
 >   D是万一集群中的Leader服务器挂了，需要一个端口来重新进行选举，选出一个新的Leader，而这个端口就是用来执行选举时服务器相互通信的端口。
 
 >   集群模式下配置一个文件myid，这个文件在dataDir目录下，这个文件里面有一个数据就是A的值，Zookeeper启动时读取此文件，拿到里面的数据与zoo.cfg里面的配置信息比较从而判断到底是哪个server。
+
 
 3）集群操作
 
@@ -186,47 +194,22 @@ chkconfig iptables off
 
 >   （3）拷贝配置好的zookeeper到其他机器上
 
->   scp -r zookeeper-3.4.10/
->   [root\@hadoop103.root.com:/opt/app/](mailto:root@hadoop103.atguigu.com:/opt/app/)
+>   scp -r zookeeper-3.4.10/ node2:/opt/app/
 
->   scp -r zookeeper-3.4.10/
->   [root\@hadoop104.root.com:/opt/app/](mailto:root@hadoop104.atguigu.com:/opt/app/)
+>   scp -r zookeeper-3.4.10/ node3:/opt/app/
+
 
 >   并分别修改myid文件中内容为3、4
 
 >   （4）分别启动zookeeper
 
->   [root\@hadoop102 zookeeper-3.4.10]\# bin/zkServer.sh start
+>   bin/zkServer.sh start
 
->   [root\@hadoop103 zookeeper-3.4.10]\# bin/zkServer.sh start
-
->   [root\@hadoop104 zookeeper-3.4.10]\# bin/zkServer.sh start
 
 >   （5）查看状态
 
->   [root\@hadoop102 zookeeper-3.4.10]\# bin/zkServer.sh status
+>  bin/zkServer.sh status
 
->   JMX enabled by default
-
->   Using config: /opt/module/zookeeper-3.4.10/bin/../conf/zoo.cfg
-
->   Mode: follower
-
->   [root\@hadoop103 zookeeper-3.4.10]\# bin/zkServer.sh status
-
->   JMX enabled by default
-
->   Using config: /opt/module/zookeeper-3.4.10/bin/../conf/zoo.cfg
-
->   Mode: leader
-
->   [root\@hadoop104 zookeeper-3.4.5]\# bin/zkServer.sh status
-
->   JMX enabled by default
-
->   Using config: /opt/module/zookeeper-3.4.10/bin/../conf/zoo.cfg
-
->   Mode: follower
 
 2.2 Kafka集群部署 
 ------------------
@@ -252,30 +235,28 @@ mkdir logs
 输入以下内容：
 
 |   |  |
-|:---------|--|
+| :---------| --- |
 |  \#broker的全局唯一编号，不能重复| broker.id=0|
 |   \#删除topic功能使能 |delete.topic.enable=true|
 | \#处理网络请求的线程数量 |num.network.threads=3|
 | \#用来处理磁盘IO的现成数量 |num.io.threads=8|
 | \#发送套接字的缓冲区大小 |socket.send.buffer.bytes=102400 |
-|\#接收套接字的缓冲区大小 |socket.receive.buffer.bytes=102400 |
-|\#请求套接字的缓冲区大小| socket.request.max.bytes=104857600 |
-|\#kafka运行日志存放的路径 |log.dirs=/opt/module/kafka/logs |
-|\#topic在当前broker上的分区个数 |num.partitions=1|
+| \#接收套接字的缓冲区大小 |socket.receive.buffer.bytes=102400 |
+| \#请求套接字的缓冲区大小| socket.request.max.bytes=104857600 |
+| \#kafka运行日志存放的路径 |log.dirs=/opt/module/kafka/logs |
+| \#topic在当前broker上的分区个数 |num.partitions=1|
 | \#用来恢复和清理data下数据的线程数量| num.recovery.threads.per.data.dir=1 
-|\#segment文件保留的最长时间，超时将被删除 |log.retention.hours=168 |
- | \#配置连接Zookeeper集群地址 |zookeeper.connect=hadoop102:2181,hadoop103:2181,hadoop104:2181 |
+| \#segment文件保留的最长时间，超时将被删除 |log.retention.hours=168 |
+| \#配置连接Zookeeper集群地址 |zookeeper.connect=node1:2181,node:2181,hadoop104:2181 |
 
 
 5）配置环境变量
 
 vi /etc/profile
-
-| \#KAFKA_HOME export KAFKA_HOME=/opt/module/kafka<br> export PATH=\$PATH:\$KAFKA_HOME/bin |
-|--------------------------------------------------------------------------------------|
-
-
-[root\@hadoop102 module]\# source /etc/profile
+```
+export KAFKA_HOME=/opt/module/kafka<br> export PATH=\$PATH:\$KAFKA_HOME/bin 
+```
+ source /etc/profile
 
 6）分发安装包
 
@@ -283,13 +264,13 @@ scp profile
 
 scp kafka/
 
-7）分别在hadoop103和hadoop104上修改配置文件/opt/module/kafka/config/server.properties中的broker.id=1、broker.id=2
+7）分别在node和hadoop104上修改配置文件/opt/module/kafka/config/server.properties中的broker.id=1、broker.id=2
 
 注：broker.id不得重复
 
 8）启动集群
 
-依次在hadoop102、hadoop103、hadoop104节点上启动kafka
+依次在node1、node、hadoop104节点上启动kafka
 
 bin/kafka-server-start.sh config/server.properties &
 
@@ -302,11 +283,11 @@ bin/kafka-server-stop.sh stop
 
 1）查看当前服务器中的所有topic
 
-bin/kafka-topics.sh --zookeeper hadoop102:2181 --list
+bin/kafka-topics.sh --zookeeper node1:2181 --list
 
 2）创建topic
 
->   bin/kafka-topics.sh --zookeeper hadoop102:2181 --create --replication-factor
+>   bin/kafka-topics.sh --zookeeper node1:2181 --create --replication-factor
 >   3 --partitions 1 --topic first
 
 >   选项说明：
@@ -319,13 +300,13 @@ bin/kafka-topics.sh --zookeeper hadoop102:2181 --list
 
 3）删除topic
 
->   bin/kafka-topics.sh --zookeeper hadoop102:2181 --delete --topic first
+>   bin/kafka-topics.sh --zookeeper node1:2181 --delete --topic first
 
 需要server.properties中设置delete.topic.enable=true否则只是标记删除或者直接重启。
 
 4）发送消息
 
-bin/kafka-console-producer.sh --broker-list hadoop102:9092 --topic first
+bin/kafka-console-producer.sh --broker-list node1:9092 --topic first
 
 \>hello world
 
@@ -333,14 +314,14 @@ bin/kafka-console-producer.sh --broker-list hadoop102:9092 --topic first
 
 5）消费消息
 
-bin/kafka-console-consumer.sh --zookeeper hadoop102:2181 --from-beginning
+bin/kafka-console-consumer.sh --zookeeper node1:2181 --from-beginning
 --topic first
 
 \--from-beginning：会把first主题中以往所有的数据都读取出来。根据业务场景选择是否增加该配置。
 
 6）查看某个Topic的详情
 
->   bin/kafka-topics.sh --zookeeper hadoop102:2181 --describe --topic first
+>   bin/kafka-topics.sh --zookeeper node1:2181 --describe --topic first
 
 2.4 Kafka配置信息
 -----------------
@@ -484,9 +465,27 @@ log上，其中的每一个消息都被赋予了一个唯一的offset值。
 
 （3）patition和key都未指定，使用轮询选出一个patition。
 
-| **DefaultPartitioner类 public int** partition(String topic, Object key, **byte**[] keyBytes, Object value, **byte**[] valueBytes, Cluster cluster) { List\<PartitionInfo\> partitions = cluster.partitionsForTopic(topic); **int** numPartitions = partitions.size(); **if** (keyBytes == **null**) { **int** nextValue = nextValue(topic); List\<PartitionInfo\> availablePartitions = cluster.availablePartitionsForTopic(topic); **if** (availablePartitions.size() \> 0) { **int** part = Utils.*toPositive*(nextValue) % availablePartitions.size(); **return** availablePartitions.get(part).partition(); } **else** { // no partitions are available, give a non-available partition **return** Utils.*toPositive*(nextValue) % numPartitions; } } **else** { // hash the keyBytes to choose a partition **return** Utils.*toPositive*(Utils.*murmur2*(keyBytes)) % numPartitions; } } |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
+```
+// DefaultPartitioner类 
+public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) { 
+    List<PartitionInfo> partitions = cluster.partitionsForTopic(topic);
+    int numPartitions = partitions.size(); 
+    if (keyBytes == null) { 
+        int nextValue = nextValue(topic);
+        List<PartitionInfo> availablePartitions = cluster.availablePartitionsForTopic(topic);
+        if (availablePartitions.size() > 0) { 
+            int part = Utils.toPositive(nextValue) % availablePartitions.size();
+            return availablePartitions.get(part).partition();
+        } else {
+            // no partitions are available, give a non-available partition
+            return Utils.toPositive(nextValue) % numPartitions; 
+        } 
+    } else { // hash the keyBytes to choose a partition
+         return Utils.toPositive(Utils.murmur2(keyBytes)) % numPartitions; 
+    } 
+}
+        
+```
 
 ### 3.1.3 副本（Replication）
 
@@ -521,7 +520,7 @@ default.replication.factor=N）。没有replication的情况下，一旦broker
 物理上把topic分成一个或多个patition（对应 server.properties
 中的num.partitions=3配置），每个patition物理上对应一个文件夹（该文件夹存储该patition的所有消息和索引文件），如下：
 
-[root\@hadoop102 logs]\$ ll
+[root\@node1 logs]\$ ll
 
 drwxrwxr-x. 2 root root 4096 8月 6 14:37 first-0
 
@@ -529,9 +528,9 @@ drwxrwxr-x. 2 root root 4096 8月 6 14:35 first-1
 
 drwxrwxr-x. 2 root root 4096 8月 6 14:37 first-2
 
-[root\@hadoop102 logs]\$ cd first-0
+[root\@node1 logs]\$ cd first-0
 
-[root\@hadoop102 first-0]\$ ll
+[root\@node1 first-0]\$ ll
 
 \-rw-rw-r--. 1 root root 10485760 8月 6 14:33 00000000000000000000.index
 
@@ -623,28 +622,28 @@ pull模式不足之处是，如果kafka没有数据，消费者可能会陷入�
 
 2）案例实操
 
-（1）在hadoop102、hadoop103上修改/opt/module/kafka/config/consumer.properties配置文件中的group.id属性为任意组名。
+（1）在node1、node上修改/opt/module/kafka/config/consumer.properties配置文件中的group.id属性为任意组名。
 
->   [root\@hadoop103 config]\$ vi consumer.properties
+>   [root\@node config]\$ vi consumer.properties
 
 >   group.id=root
 
-（2）在hadoop102、hadoop103上分别启动消费者
+（2）在node1、node上分别启动消费者
 
->   [root\@hadoop102 kafka]\$ bin/kafka-console-consumer.sh --zookeeper
->   hadoop102:2181 --topic first --consumer.config config/consumer.properties
+>   [root\@node1 kafka]\$ bin/kafka-console-consumer.sh --zookeeper
+>   node1:2181 --topic first --consumer.config config/consumer.properties
 
->   [root\@hadoop103 kafka]\$ bin/kafka-console-consumer.sh --zookeeper
->   hadoop102:2181 --topic first --consumer.config config/consumer.properties
+>   [root\@node kafka]\$ bin/kafka-console-consumer.sh --zookeeper
+>   node1:2181 --topic first --consumer.config config/consumer.properties
 
 （3）在hadoop104上启动生产者
 
 >   [root\@hadoop104 kafka]\$ bin/kafka-console-producer.sh --broker-list
->   hadoop102:9092 --topic first
+>   node1:9092 --topic first
 
 >   \>hello world
 
-（4）查看hadoop102和hadoop103的接收者。
+（4）查看node1和node的接收者。
 
 同一时刻只有一个消费者接收到消息。
 
@@ -663,61 +662,192 @@ path。
 
 4）启动zk和kafka集群，在kafka集群中打开一个消费者
 
-[root\@hadoop102 kafka]\$ bin/kafka-console-consumer.sh --zookeeper
-hadoop102:2181 --topic first
+[root\@node1 kafka]\$ bin/kafka-console-consumer.sh --zookeeper
+node1:2181 --topic first
 
 4.2 Kafka生产者Java API
 -----------------------
 
 ### 4.2.1 创建生产者（过时的API）
-
-| **package** com.root.kafka; **import** java.util.Properties; **import** *kafka.javaapi.producer.Producer*; **import** *kafka.producer.KeyedMessage*; **import** *kafka.producer.ProducerConfig*; **public class** OldProducer { \@SuppressWarnings("deprecation") **public static void** main(String[] args) { Properties properties = **new** Properties(); properties.put("metadata.broker.list", "hadoop102:9092"); properties.put("request.required.acks", "1"); properties.put("serializer.class", "kafka.serializer.StringEncoder"); Producer\<Integer, String\> producer = **new** Producer\<Integer,String\>(**new** ProducerConfig(properties)); KeyedMessage\<Integer, String\> message = **new** KeyedMessage\<Integer, String\>("first", "hello world"); producer.send(message ); } } |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
+```
+package com.root.kafka; 
+import java.util.Properties;
+import kafka.javaapi.producer.Producer;
+import kafka.producer.KeyedMessage; 
+import kafka.producer.ProducerConfig; 
+public class OldProducer { 
+@SuppressWarnings("deprecation") 
+public static void main(String[] args) {
+     Properties properties = new Properties();
+    properties.put("metadata.broker.list", "node1:9092"); 
+    properties.put("request.required.acks", "1");
+    properties.put("serializer.class", "kafka.serializer.StringEncoder"); 
+    Producer<Integer, String> producer = new Producer<Integer,String>(new ProducerConfig(properties));
+     KeyedMessage<Integer, String> message = new KeyedMessage<Integer, String>("first", "hello world");
+     producer.send(message ); 
+     } 
+  }
+```
 
 ### 4.2.2 创建生产者（新API）
 
-| **package** com.root.kafka; **import** java.util.Properties; **import** org.apache.kafka.clients.producer.KafkaProducer; **import** org.apache.kafka.clients.producer.Producer; **import** org.apache.kafka.clients.producer.ProducerRecord; **public class** NewProducer { **public static void** main(String[] args) { Properties props = **new** Properties(); // *Kafka*服务端的主机名和端口号 props.put("bootstrap.servers", "hadoop103:9092"); // 等待所有副本节点的应答 props.put("acks", "all"); // 消息发送最大尝试次数 props.put("retries", 0); // 一批消息处理大小 props.put("batch.size", 16384); // 请求延时 props.put("linger.ms", 1); // 发送缓存区内存大小 props.put("buffer.memory", 33554432); // key序列化 props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer"); // value序列化 props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer"); Producer\<String, String\> producer = **new** KafkaProducer\<\>(props); **for** (**int** i = 0; i \< 50; i++) { producer.send(**new** ProducerRecord\<String, String\>("first", Integer.*toString*(i), "hello world-" + i)); } producer.close(); } } |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
+```java
+package com.root.kafka; 
+import java.util.Properties;
+ import org.apache.kafka.clients.producer.KafkaProducer; 
+ import org.apache.kafka.clients.producer.Producer; 
+ import org.apache.kafka.clients.producer.ProducerRecord; 
+ public class NewProducer { 
+ public static void main(String[] args) { Properties props = new Properties(); 
+ // Kafka服务端的主机名和端口号 
+ props.put("bootstrap.servers", "node2:9092"); 
+ // 等待所有副本节点的应答 
+ props.put("acks", "all"); 
+ // 消息发送最大尝试次数 
+ props.put("retries", 0); 
+ // 一批消息处理大小 
+ props.put("batch.size", 16384); 
+ // 请求延时 
+ props.put("linger.ms", 1);
+  // 发送缓存区内存大小 
+ props.put("buffer.memory", 33554432); 
+ // key序列化 
+ props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer"); 
+ // value序列化 
+ props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer"); 
+ Producer<String, String> producer = new KafkaProducer<>(props); 
+ for (int i = 0; i < 50; i++) { 
+ producer.send(new ProducerRecord<String, String>("first", Integer.toString(i), "hello world-" + i));
+  } 
+  producer.close(); 
+  } 
+  }
+```
 
 ### 4.2.3 创建生产者带回调函数（新API）
 
-| **package** com.root.kafka; **import** java.util.Properties; **import** org.apache.kafka.clients.producer.Callback; **import** org.apache.kafka.clients.producer.KafkaProducer; **import** org.apache.kafka.clients.producer.ProducerRecord; **import** org.apache.kafka.clients.producer.RecordMetadata; **public class** CallBackProducer { **public static void** main(String[] args) { Properties props = **new** Properties(); // *Kafka*服务端的主机名和端口号 props.put("bootstrap.servers", "hadoop103:9092"); // 等待所有副本节点的应答 props.put("acks", "all"); // 消息发送最大尝试次数 props.put("retries", 0); // 一批消息处理大小 props.put("batch.size", 16384); // 增加服务端请求延时 props.put("linger.ms", 1); // 发送缓存区内存大小 props.put("buffer.memory", 33554432); // key序列化 props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer"); // value序列化 props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer"); KafkaProducer\<String, String\> kafkaProducer = **new** KafkaProducer\<\>(props); **for** (**int** i = 0; i \< 50; i++) { kafkaProducer.send(**new** ProducerRecord\<String, String\>("first", "hello" + i), **new** Callback() { \@Override **public void** onCompletion(RecordMetadata metadata, Exception exception) { **if** (metadata != **null**) { System.*err*.println(metadata.partition() + "---" + metadata.offset()); } } }); } kafkaProducer.close(); } } |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
+```java
+package com.root.kafka; 
+import java.util.Properties; 
+import org.apache.kafka.clients.producer.Callback; 
+import org.apache.kafka.clients.producer.KafkaProducer; 
+import org.apache.kafka.clients.producer.ProducerRecord; 
+import org.apache.kafka.clients.producer.RecordMetadata; 
+public class CallBackProducer { 
+    public static void main(String[] args) { 
+        Properties props = new Properties(); 
+        // Kafka服务端的主机名和端口号 
+         props.put("bootstrap.servers", "node2:9092"); 
+         // 等待所有副本节点的应答 
+          props.put("acks", "all"); 
+         // 消息发送最大尝试次数 
+          props.put("retries", 0); 
+         // 一批消息处理大小 
+          props.put("batch.size", 16384); 
+         // 增加服务端请求延时 
+          props.put("linger.ms", 1); 
+         // 发送缓存区内存大小 
+          props.put("buffer.memory", 33554432); 
+         // key序列化 
+         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer"); 
+         // value序列化 
+          props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer"); 
+          KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(props); 
+          for (int i = 0; i < 50; i++) { 
+          kafkaProducer.send(new ProducerRecord<String, String>("first", "hello" + i), new Callback() { 
+          @Override 
+          public void onCompletion(RecordMetadata metadata, Exception exception) { 
+          if (metadata != null) { 
+               System.err.println(metadata.partition() + "---" + metadata.offset()); } } }); } 
+         kafkaProducer.close(); 
+    } 
+}
+```
 
 ### 4.2.4 自定义分区生产者
 
 0）需求：将所有数据存储到topic的第0号分区上
 
 1）定义一个类实现Partitioner接口，重写里面的方法（过时API）
-
-| **import** *java.util.Map*; **import** *kafka.producer.Partitioner*; **public class** CustomPartitioner **implements** *Partitioner* { **public** CustomPartitioner() { **super**(); } \@Override **public int** partition(Object key, **int** numPartitions) { // 控制分区 **return** 0; } } |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
-
+```java
+import java.util.Map;
+import kafka.producer.Partitioner;
+public class CustomPartitioner implements Partitioner {
+    public CustomPartitioner() {
+        super();
+    }
+    @Override 
+    public int partition(Object key, int numPartitions) { 
+    // 控制分区 
+        return 0; 
+        } 
+    
+}
+```
 2）自定义分区（新API）
 
-| **import** java.util.Map; **import** org.apache.kafka.clients.producer.Partitioner; **import** org.apache.kafka.common.Cluster; **public class** CustomPartitioner **implements** Partitioner { \@Override **public void** configure(Map\<String, ?\> configs) { } \@Override **public int** partition(String topic, Object key, **byte**[] keyBytes, Object value, **byte**[] valueBytes, Cluster cluster) { // 控制分区 **return** 0; } \@Override **public void** close() { } } |
-|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
+```java
+import java.util.Map; 
+import org.apache.kafka.clients.producer.Partitioner;
+import org.apache.kafka.common.Cluster; 
+public class CustomPartitioner implements Partitioner { 
+    @Override
+     public void configure(Map<String, ?> configs) {
+    }
+     @Override
+    public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) { 
+        // 控制分区
+        return 0;
+    } 
+    @Override 
+    public void close() { 
+        
+    } 
+}
+```
 
 3）在代码中调用
-
-| **import** java.util.Properties; **import** org.apache.kafka.clients.producer.KafkaProducer; **import** org.apache.kafka.clients.producer.Producer; **import** org.apache.kafka.clients.producer.ProducerRecord; **public class** PartitionerProducer { **public static void** main(String[] args) { Properties props = **new** Properties(); // *Kafka*服务端的主机名和端口号 props.put("bootstrap.servers", "hadoop103:9092"); // 等待所有副本节点的应答 props.put("acks", "all"); // 消息发送最大尝试次数 props.put("retries", 0); // 一批消息处理大小 props.put("batch.size", 16384); // 增加服务端请求延时 props.put("linger.ms", 1); // 发送缓存区内存大小 props.put("buffer.memory", 33554432); // key序列化 props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer"); // value序列化 props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer"); // 自定义分区 props.put("partitioner.class", "com.root.kafka.CustomPartitioner"); Producer\<String, String\> producer = **new** KafkaProducer\<\>(props); producer.send(**new** ProducerRecord\<String, String\>("first", "1", "root")); producer.close(); } } |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
+```java
+import java.util.Properties; 
+import org.apache.kafka.clients.producer.KafkaProducer; 
+import org.apache.kafka.clients.producer.Producer; 
+import org.apache.kafka.clients.producer.ProducerRecord; 
+public class PartitionerProducer { 
+    public static void main(String[] args) { 
+        Properties props = new Properties(); 
+        // Kafka服务端的主机名和端口号 
+        props.put("bootstrap.servers", "node2:9092"); 
+        // 等待所有副本节点的应答 
+        props.put("acks", "all"); 
+        // 消息发送最大尝试次数 
+        props.put("retries", 0); 
+        // 一批消息处理大小 
+        props.put("batch.size", 16384); 
+        // 增加服务端请求延时 
+        props.put("linger.ms", 1); 
+        // 发送缓存区内存大小 
+        props.put("buffer.memory", 33554432); 
+        // key序列化 
+        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer"); 
+        // value序列化 
+        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer"); 
+        //自定义分区 
+        props.put("partitioner.class", "com.root.kafka.CustomPartitioner"); 
+        Producer<String, String> producer = new KafkaProducer<>(props); 
+        producer.send(new ProducerRecord<String, String>("first", "1", "root")); producer.close(); 
+    } 
+}
+```
 
 4）测试
 
-（1）在hadoop102上监控/opt/module/kafka/logs/目录下first主题3个分区的log日志动态变化情况
+（1）在node1上监控/opt/module/kafka/logs/目录下first主题3个分区的log日志动态变化情况
 
-[root\@hadoop102 first-0]\$ tail -f 00000000000000000000.log
+[root\@node1 first-0]\$ tail -f 00000000000000000000.log
 
-[root\@hadoop102 first-1]\$ tail -f 00000000000000000000.log
+[root\@node1 first-1]\$ tail -f 00000000000000000000.log
 
-[root\@hadoop102 first-2]\$ tail -f 00000000000000000000.log
+[root\@node1 first-2]\$ tail -f 00000000000000000000.log
 
 （2）发现数据都存储到指定的分区了。
 
@@ -727,21 +857,80 @@ hadoop102:2181 --topic first
 0）在控制台创建发送者
 
 >   [root\@hadoop104 kafka]\$ bin/kafka-console-producer.sh --broker-list
->   hadoop102:9092 --topic first
+>   node1:9092 --topic first
 
 >   \>hello world
 
 1）创建消费者（过时API）
 
-| **import** java.util.HashMap; **import** java.util.List; **import** java.util.Map; **import** java.util.Properties; **import** kafka.consumer.Consumer; **import** *kafka.consumer.ConsumerConfig*; **import** *kafka.consumer.ConsumerIterator*; **import** *kafka.consumer.KafkaStream*; **import** *kafka.javaapi.consumer.ConsumerConnector*; **public class** CustomConsumer { \@SuppressWarnings("deprecation") **public static void** main(String[] args) { Properties properties = **new** Properties(); properties.put("zookeeper.connect", "hadoop102:2181"); properties.put("group.id", "g1"); properties.put("zookeeper.session.timeout.ms", "500"); properties.put("zookeeper.sync.time.ms", "250"); properties.put("auto.commit.interval.ms", "1000"); // 创建消费者连接器 ConsumerConnector consumer = Consumer.*createJavaConsumerConnector*(**new** ConsumerConfig(properties)); HashMap\<String, Integer\> topicCount = **new** HashMap\<\>(); topicCount.put("first", 1); Map\<String, List\<KafkaStream\<**byte**[], **byte**[]\>\>\> consumerMap = consumer.createMessageStreams(topicCount); KafkaStream\<**byte**[], **byte**[]\> stream = consumerMap.get("first").get(0); ConsumerIterator\<**byte**[], **byte**[]\> it = stream.iterator(); **while** (it.hasNext()) { System.*out*.println(**new** String(it.next().message())); } } } |
-|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
+```java
+import java.util.HashMap; 
+import java.util.List; 
+import java.util.Map; 
+import java.util.Properties; 
+import kafka.consumer.Consumer; 
+import kafka.consumer.ConsumerConfig; 
+import kafka.consumer.ConsumerIterator; 
+import kafka.consumer.KafkaStream; 
+import kafka.javaapi.consumer.ConsumerConnector; 
+public class CustomConsumer { 
+    @SuppressWarnings("deprecation") 
+    public static void main(String[] args) { 
+        Properties properties = new Properties(); 
+        properties.put("zookeeper.connect", "node1:2181"); 
+        properties.put("group.id", "g1"); 
+        properties.put("zookeeper.session.timeout.ms", "500"); 
+        properties.put("zookeeper.sync.time.ms", "250"); 
+        properties.put("auto.commit.interval.ms", "1000"); 
+        // 创建消费者连接器 
+        ConsumerConnector consumer = Consumer.createJavaConsumerConnector(new ConsumerConfig(properties)); 
+        HashMap<String, Integer> topicCount = new HashMap<>(); 
+        topicCount.put("first", 1); 
+        Map<String, List<KafkaStream<byte[], byte[]>>> consumerMap = consumer.createMessageStreams(topicCount); 
+        KafkaStream<byte[], byte[]> stream = consumerMap.get("first").get(0); 
+        ConsumerIterator<byte[], byte[]> it = stream.iterator(); 
+        while (it.hasNext()) { 
+            System.out.println(new String(it.next().message()));
+        } 
+    } 
+}
+```
 
 2）官方提供案例（自动维护消费情况）（新API）
-
-| **import** java.util.Arrays; **import** java.util.Properties; **import** org.apache.kafka.clients.consumer.ConsumerRecord; **import** org.apache.kafka.clients.consumer.ConsumerRecords; **import** org.apache.kafka.clients.consumer.KafkaConsumer; **public class** CustomNewConsumer { **public static void** main(String[] args) { Properties props = **new** Properties(); // 定义*kakfa* 服务的地址，不需要将所有broker指定上 props.put("bootstrap.servers", "hadoop102:9092"); // 制定consumer group props.put("group.id", "test"); // 是否自动确认offset props.put("enable.auto.commit", "true"); // 自动确认offset的时间间隔 props.put("auto.commit.interval.ms", "1000"); // key的序列化类 props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"); // value的序列化类 props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"); // 定义consumer KafkaConsumer\<String, String\> *consumer* = **new** KafkaConsumer\<\>(props); // 消费者订阅的topic, 可同时订阅多个 consumer.subscribe(Arrays.*asList*("first", "second","third")); **while** (**true**) { // 读取数据，读取超时时间为100ms ConsumerRecords\<String, String\> records = consumer.poll(100); **for** (ConsumerRecord\<String, String\> record : records) System.*out*.printf("offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value()); } } }\` |
-|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
+```java
+import java.util.Arrays; 
+import java.util.Properties; 
+import org.apache.kafka.clients.consumer.ConsumerRecord; 
+import org.apache.kafka.clients.consumer.ConsumerRecords; 
+import org.apache.kafka.clients.consumer.KafkaConsumer; 
+public class CustomNewConsumer { 
+    public static void main(String[] args) { 
+        Properties props = new Properties(); 
+        // 定义kakfa 服务的地址，不需要将所有broker指定上 
+        props.put("bootstrap.servers", "hadoop102:9092"); 
+        // 制定consumer group 
+         props.put("group.id", "test"); 
+        // 是否自动确认offset 
+        props.put("enable.auto.commit", "true");
+        // 自动确认offset的时间间隔 
+         props.put("auto.commit.interval.ms", "1000"); 
+        // key的序列化类 
+         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"); 
+        // value的序列化类 
+         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"); 
+        // 定义consumer 
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props); 
+        // 消费者订阅的topic, 可同时订阅多个 
+         consumer.subscribe(Arrays.asList("first", "second","third")); 
+         while (true) { 
+        // 读取数据，读取超时时间为100ms 
+         ConsumerRecords<String, String> records = consumer.poll(100); 
+         for (ConsumerRecord<String, String> record : records) 
+             System.out.printf("offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
+         }
+    }
+}
+```
 
 五 [Kafka producer拦截器(interceptor)](http://www.cnblogs.com/huxi2b/p/7072447.html)
 ====================================================================================
@@ -786,28 +975,110 @@ chain)。Intercetpor的实现接口是org.apache.kafka.clients.producer.Producer
 
 （1）增加时间戳拦截器
 
-| **import** java.util.Map; **import** org.apache.kafka.clients.producer.ProducerInterceptor; **import** org.apache.kafka.clients.producer.ProducerRecord; **import** org.apache.kafka.clients.producer.RecordMetadata; **public class** TimeInterceptor **implements** ProducerInterceptor\<String, String\> { \@Override **public void** configure(Map\<String, ?\> configs) { } \@Override **public** ProducerRecord\<String, String\> onSend(ProducerRecord\<String, String\> record) { // 创建一个新的record，把时间戳写入消息体的最前部 **return** *new ProducerRecord(record.topic(), record.partition(), record.timestamp(), record.key(), System.currentTimeMillis() + "," + record.value().toString())*; } \@Override **public void** onAcknowledgement(RecordMetadata metadata, Exception exception) { } \@Override **public void** close() { } } |
-|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
+```java
+import java.util.Map; 
+import org.apache.kafka.clients.producer.ProducerInterceptor; 
+import org.apache.kafka.clients.producer.ProducerRecord; 
+import org.apache.kafka.clients.producer.RecordMetadata; 
+public class TimeInterceptor implements ProducerInterceptor<String, String> { 
+    @Override 
+    public void configure(Map<String, ?> configs) {
+    }
+     @Override 
+     public ProducerRecord<String, String> onSend(ProducerRecord<String, String> record) {
+        // 创建一个新的record，把时间戳写入消息体的最前部 
+        return new ProducerRecord(record.topic(), record.partition(), record.timestamp(), record.key(), System.currentTimeMillis() + "," + record.value().toString()); 
+    } 
+       @Override 
+       public void onAcknowledgement(RecordMetadata metadata, Exception exception) { 
+        
+       } 
+       @Override 
+       public void close() { 
+        
+       } 
+}
+```
 
 （2）统计发送消息成功和发送失败消息数，并在producer关闭时打印这两个计数器
 
-| import java.util.Map; import org.apache.kafka.clients.producer.ProducerInterceptor; import org.apache.kafka.clients.producer.ProducerRecord; import org.apache.kafka.clients.producer.RecordMetadata; public class CounterInterceptor implements ProducerInterceptor\<String, String\>{ private int errorCounter = 0; private int successCounter = 0; \@Override public void configure(Map\<String, ?\> configs) { } \@Override public ProducerRecord\<String, String\> onSend(ProducerRecord\<String, String\> record) { return record; } \@Override public void onAcknowledgement(RecordMetadata metadata, Exception exception) { // 统计成功和失败的次数 if (exception == null) { successCounter++; } else { errorCounter++; } } \@Override public void close() { // 保存结果 System.out.println("Successful sent: " + successCounter); System.out.println("Failed sent: " + errorCounter); } } |
-|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
+```java
+import java.util.Map; 
+import org.apache.kafka.clients.producer.ProducerInterceptor; 
+import org.apache.kafka.clients.producer.ProducerRecord; 
+import org.apache.kafka.clients.producer.RecordMetadata; 
+public class CounterInterceptor implements ProducerInterceptor<String, String>{ 
+    private int errorCounter = 0; 
+    private int successCounter = 0; 
+    @Override 
+    public void configure(Map<String, ?> configs) { 
+        
+    } @Override 
+    public ProducerRecord<String, String> onSend(ProducerRecord<String, String> record) {
+        return record;
+    } 
+    @Override 
+    public void onAcknowledgement(RecordMetadata metadata, Exception exception) { 
+        // 统计成功和失败的次数 
+        if (exception == null) { 
+            successCounter++;
+        } else { 
+            errorCounter++;
+        } 
+    }
+    @Override public void close() {
+        // 保存结果 
+        System.out.println("Successful sent: " + successCounter);
+        System.out.println("Failed sent: " + errorCounter);
+    } 
+}
+```
 
 （3）producer主程序
-
-| **import** java.util.ArrayList; **import** java.util.List; **import** java.util.Properties; **import** org.apache.kafka.clients.producer.KafkaProducer; **import** org.apache.kafka.clients.producer.Producer; **import** org.apache.kafka.clients.producer.ProducerConfig; **import** org.apache.kafka.clients.producer.ProducerRecord; **public class** InterceptorProducer { **public static void** main(String[] args) **throws** Exception { // 1 设置配置信息 Properties props = **new** Properties(); props.put("bootstrap.servers", "hadoop102:9092"); props.put("acks", "all"); props.put("retries", 0); props.put("batch.size", 16384); props.put("linger.ms", 1); props.put("buffer.memory", 33554432); props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer"); props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer"); // 2 构建拦截链 List\<String\> interceptors = **new** ArrayList\<\>(); interceptors.add("com.root.kafka.interceptor.TimeInterceptor"); interceptors.add("com.root.kafka.interceptor.CounterInterceptor"); props.put(ProducerConfig.*INTERCEPTOR_CLASSES_CONFIG*, interceptors); String topic = "first"; Producer\<String, String\> producer = **new** KafkaProducer\<\>(props); // 3 发送消息 **for** (**int** i = 0; i \< 10; i++) { ProducerRecord\<String, String\> record = **new** ProducerRecord\<\>(topic, "message" + i); producer.send(record); } // 4 一定要关闭producer，这样才会调用*interceptor*的close方法 producer.close(); } } |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
+```java
+import java.util.ArrayList; 
+import java.util.List; 
+import java.util.Properties; 
+import org.apache.kafka.clients.producer.KafkaProducer; 
+import org.apache.kafka.clients.producer.Producer; 
+import org.apache.kafka.clients.producer.ProducerConfig; 
+import org.apache.kafka.clients.producer.ProducerRecord; 
+public class InterceptorProducer { 
+    public static void main(String[] args) throws Exception {
+        // 1 设置配置信息 
+        Properties props = new Properties();
+        props.put("bootstrap.servers", "hadoop102:9092"); 
+        props.put("acks", "all");
+        props.put("retries", 0); 
+        props.put("batch.size", 16384); 
+        props.put("linger.ms", 1); 
+        props.put("buffer.memory", 33554432); 
+        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer"); 
+        // 2 构建拦截链 
+        List<String> interceptors = new ArrayList<>();
+        interceptors.add("com.root.kafka.interceptor.TimeInterceptor");
+        interceptors.add("com.root.kafka.interceptor.CounterInterceptor");
+        props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, interceptors);
+        String topic = "first"; 
+        Producer<String, String> producer = new KafkaProducer<>(props); 
+        // 3 发送消息 
+       for (int i = 0; i < 10; i++) { 
+           ProducerRecord<String, String> record = new ProducerRecord<>(topic, "message" + i);
+           producer.send(record);
+       } 
+       // 4 一定要关闭producer，这样才会调用interceptor的close方法 
+       producer.close(); 
+    }
+}
+```
 
 3）测试
 
 （1）在kafka上启动消费者，然后运行客户端java程序。
 
->   [root\@hadoop102 kafka]\$ bin/kafka-console-consumer.sh --zookeeper
->   hadoop102:2181 --from-beginning --topic first
+>   [root\@node1 kafka]\$ bin/kafka-console-consumer.sh --zookeeper
+>   node1:2181 --from-beginning --topic first
 
 >   1501904047034,message0
 
@@ -925,21 +1196,80 @@ Stream提供滚动部署和滚动升级以及重新计算的能力。
 
 （2）创建主类
 
-| import java.util.Properties; import org.apache.kafka.streams.KafkaStreams; import org.apache.kafka.streams.StreamsConfig; import org.apache.kafka.streams.processor.Processor; import org.apache.kafka.streams.processor.ProcessorSupplier; import org.apache.kafka.streams.processor.TopologyBuilder; public class Application { public static void main(String[] args) { // 定义输入的topic String from = "first"; // 定义输出的topic String to = "second"; // 设置参数 Properties settings = new Properties(); settings.put(StreamsConfig.APPLICATION_ID_CONFIG, "logFilter"); settings.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "hadoop102:9092"); StreamsConfig config = new StreamsConfig(settings); // 构建拓扑 TopologyBuilder builder = new TopologyBuilder(); builder.addSource("SOURCE", from) .addProcessor("PROCESS", new ProcessorSupplier\<byte[], byte[]\>() { \@Override public Processor\<byte[], byte[]\> get() { // 具体分析处理 return new LogProcessor(); } }, "SOURCE") .addSink("SINK", to, "PROCESS"); // 创建kafka stream KafkaStreams streams = new KafkaStreams(builder, config); streams.start(); } } |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
+```java
+import java.util.Properties; 
+import org.apache.kafka.streams.KafkaStreams; 
+import org.apache.kafka.streams.StreamsConfig; 
+import org.apache.kafka.streams.processor.Processor; 
+import org.apache.kafka.streams.processor.ProcessorSupplier; 
+import org.apache.kafka.streams.processor.TopologyBuilder; 
+public class Application { 
+    public static void main(String[] args) { 
+    // 定义输入的topic 
+    String from = "first";
+    // 定义输出的topic 
+     String to = "second";
+     // 设置参数 
+    Properties settings = new Properties();
+    settings.put(StreamsConfig.APPLICATION_ID_CONFIG, "logFilter");
+    settings.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "node1:9092"); 
+    StreamsConfig config = new StreamsConfig(settings); 
+    // 构建拓扑 
+    TopologyBuilder builder = new TopologyBuilder(); 
+    builder.addSource("SOURCE", from) .addProcessor("PROCESS", new ProcessorSupplier<byte[], byte[]>() { 
+        @Override 
+        public Processor<byte[], byte[]> get() { 
+            // 具体分析处理 
+            return new LogProcessor(); 
+        } }, "SOURCE") .addSink("SINK", to, "PROCESS"); 
+    // 创建kafka stream 
+    KafkaStreams streams = new KafkaStreams(builder, config);
+    streams.start();
+    }
+}
+```
 
 （3）具体业务处理
-
-| package com.inpu.kafka.stream; import org.apache.kafka.streams.processor.Processor; import org.apache.kafka.streams.processor.ProcessorContext; public class LogProcessor implements Processor\<byte[], byte[]\> { private ProcessorContext context; \@Override public void init(ProcessorContext context) { this.context = context; } \@Override public void process(byte[] key, byte[] value) { String input = new String(value); // 如果包含“\>\>\>”则只保留该标记后面的内容 if (input.contains("\>\>\>")) { input = input.split("\>\>\>")[1].trim(); // 输出到下一个topic context.forward("logProcessor".getBytes(), input.getBytes()); }else{ context.forward("logProcessor".getBytes(), input.getBytes()); } } \@Override public void punctuate(long timestamp) { } \@Override public void close() { } } |
-|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
+```java
+package com.inpu.kafka.stream; 
+import org.apache.kafka.streams.processor.Processor; 
+import org.apache.kafka.streams.processor.ProcessorContext; 
+public class LogProcessor implements Processor<byte[], byte[]> { 
+    private ProcessorContext context; 
+    @Override 
+    public void init(ProcessorContext context) { 
+        this.context = context;
+    }
+    @Override
+    public void process(byte[] key, byte[] value) { 
+        String input = new String(value); 
+        // 如果包含“>>>”则只保留该标记后面的内容
+        if (input.contains(">>>")) {
+            input = input.split(">>>")[1].trim();
+            // 输出到下一个topic 
+            context.forward("logProcessor".getBytes(), 
+            input.getBytes()); 
+        }
+        else{ 
+            context.forward("logProcessor".getBytes(), input.getBytes()); 
+        } 
+    }
+    @Override 
+    public void punctuate(long timestamp) {
+        
+     } 
+     @Override 
+     public void close() { 
+        
+     }
+}
+```
 
 （4）运行程序
 
 （5）在hadoop104上启动生产者
 
->   bin/kafka-console-producer.sh --broker-list hadoop102:9092 --topic first
+>   bin/kafka-console-producer.sh --broker-list node1:9092 --topic first
 
 >   \>hello\>\>\>world
 
@@ -947,9 +1277,9 @@ Stream提供滚动部署和滚动升级以及重新计算的能力。
 
 >   \>hahaha
 
-（6）在hadoop103上启动消费者
+（6）在node上启动消费者
 
->   bin/kafka-console-consumer.sh --zookeeper hadoop102:2181 --from-beginning
+>   bin/kafka-console-consumer.sh --zookeeper node1:2181 --from-beginning
 >   --topic second
 
 >   world
