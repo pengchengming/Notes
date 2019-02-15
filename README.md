@@ -24,6 +24,16 @@
 
 - [kafka基础教程](https://github.com/pengchengming/Notes/blob/master/kafka/Kafka.md)
 
+- [kafka常用命令](https://github.com/pengchengming/Notes/blob/master/kafka/kafka%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4.md)
+
+## HBase
+
+- [HBase0_98 API](https://github.com/pengchengming/Notes/blob/master/hbase/HBase0.98.java)
+
+- [HBase2_0 API](https://github.com/pengchengming/Notes/blob/master/hbase/hbase2_0.java)
+
+- [hbase0_98性能优化](https://github.com/pengchengming/Notes/blob/master/hbase/hbase0_98%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96.md)
+
 ## Spark
 
  [1、scala基础教程](https://blog.csdn.net/nihao_pcm/article/details/86715026)
