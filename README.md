@@ -35,4 +35,6 @@
 
 ## Spark
 
- [1、scala基础教程](https://blog.csdn.net/nihao_pcm/article/details/86715026)
+- [scala基础教程](https://blog.csdn.net/nihao_pcm/article/details/86715026)
+
+- [Spark性能调优](https://github.com/pengchengming/Notes/blob/master/spark/Spark%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98.md)
